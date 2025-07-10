@@ -22,9 +22,13 @@ apiVersion: v1
 kind: Service
 metadata:
   name: app2-service
+  labels:
+    app: app2
 spec:
+  type: LoadBalancer
   selector:
     app: app2
   ports:
-    - port: 80
-      targetPort: 3000
+    - protocol: TCP
+      port: 80
+      targetPort: 3000  # or your app2 port

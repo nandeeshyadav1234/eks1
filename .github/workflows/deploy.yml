@@ -24,10 +24,16 @@ jobs:
 
     - name: Verify EKS access
       run: kubectl get nodes
-      
 
-    - name: Deploy App to EKS
+    - name: Deploy Applications and LoadBalancers
       run: |
+        # Deploy app1 and app2 deployments
         kubectl apply -f k8s/app1-deployment.yaml
         kubectl apply -f k8s/app2-deployment.yaml
+
+        # Expose them with LoadBalancer services
+        kubectl apply -f k8s/app1-service.yaml
+        kubectl apply -f k8s/app2-service.yaml
+
+        # Optional: Ingress (if using ALB Ingress Controller)
         kubectl apply -f k8s/ingress.yaml
