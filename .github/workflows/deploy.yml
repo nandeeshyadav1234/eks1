@@ -1,0 +1,56 @@
+name: CI/CD to EKS
+
+on:
+  push:
+    branches: [main]
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 341354505137.dkr.ecr.us-east-1.amazonaws.com
+  CLUSTER_NAME: eks-cluster
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS OIDC
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: arn:aws:iam::341354505137:role/GitHubActionsDeployRole
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to ECR
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build & Push app1
+      uses: docker/build-push-action@v5
+      with:
+        context: ./app1
+        file: ./app1/Dockerfile
+        push: true
+        tags: ${{ env.ECR_REGISTRY }}/app1:latest
+
+    - name: Build & Push app2
+      uses: docker/build-push-action@v5
+      with:
+        context: ./app2
+        file: ./app2/Dockerfile
+        push: true
+        tags: ${{ env.ECR_REGISTRY }}/app2:latest
+
+    - name: Update kubeconfig
+      run: aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+
+    - name: Deploy to EKS
+      run: |
+        kubectl apply -f k8s/app1-deployment.yaml
+        kubectl apply -f k8s/app2-deployment.yaml
+        kubectl apply -f k8s/ingress.yaml
