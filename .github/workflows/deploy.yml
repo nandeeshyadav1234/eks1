@@ -1,56 +1,32 @@
-name: CI/CD to EKS
+name: Deploy to EKS
 
 on:
   push:
     branches: [main]
-
-env:
-  AWS_REGION: us-east-1
-  ECR_REGISTRY: 341354505137.dkr.ecr.us-east-1.amazonaws.com
-  CLUSTER_NAME: eks-cluster
-
-permissions:
-  id-token: write
-  contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+    - name: Checkout source
+      uses: actions/checkout@v3
 
-    - name: Configure AWS OIDC
+    - name: Configure AWS credentials (without OIDC)
       uses: aws-actions/configure-aws-credentials@v2
       with:
-        role-to-assume: arn:aws:iam::341354505137:role/GitHubActionsDeployRole
-        aws-region: ${{ env.AWS_REGION }}
-
-    - name: Login to ECR
-      uses: aws-actions/amazon-ecr-login@v2
-
-    - name: Build & Push app1
-      uses: docker/build-push-action@v5
-      with:
-        context: ./app1
-        file: ./app1/Dockerfile
-        push: true
-        tags: ${{ env.ECR_REGISTRY }}/app1:latest
-
-    - name: Build & Push app2
-      uses: docker/build-push-action@v5
-      with:
-        context: ./app2
-        file: ./app2/Dockerfile
-        push: true
-        tags: ${{ env.ECR_REGISTRY }}/app2:latest
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
 
     - name: Update kubeconfig
-      run: aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+      run: aws eks update-kubeconfig --region us-east-1 --name eks-cluster
 
-    - name: Deploy to EKS
+    - name: Verify EKS access
+      run: kubectl get nodes
+
+    - name: Deploy App to EKS
       run: |
-        kubectl apply -f k8s/app1-deployment.yaml --validate=false
-        kubectl apply -f k8s/app2-deployment.yaml --validate=false
-        kubectl apply -f k8s/ingress.yaml --validate=false
+        kubectl apply -f k8s/app1-deployment.yaml
+        kubectl apply -f k8s/app2-deployment.yaml
+        kubectl apply -f k8s/ingress.yaml
