@@ -1,35 +1,39 @@
-name: Deploy to EKS
+name: Deploy to intel-io-test-cluster
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+
+env:
+  AWS_REGION: us-east-1
+  CLUSTER_NAME: intel-io-test-cluster
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout source
+    - name: Checkout source code
       uses: actions/checkout@v3
 
-    - name: Configure AWS credentials (without OIDC)
+    - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
+        aws-region: ${{ env.AWS_REGION }}
 
     - name: Update kubeconfig
-      run: aws eks update-kubeconfig --region us-east-1 --name intel-io-test-cluster
-
-    - name: Verify EKS access
-      run: kubectl get nodes
-
-    - name: Deploy Applications and LoadBalancers
       run: |
-        # Deploy app1 and app2 deployments
-        kubectl apply -f k8s/app1-deployment.yaml
-        kubectl apply -f k8s/app2-deployment.yaml
+        aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
 
-        # Optional: Ingress (if using ALB Ingress Controller)
-        kubectl apply -f k8s/ingress.yaml
+    - name: Test cluster access
+      run: |
+        kubectl get nodes
+
+    - name: Deploy Kubernetes manifests
+      run: |
+        kubectl apply -f k8s/app1-deployment.yaml --validate=false
+        kubectl apply -f k8s/app2-deployment.yaml --validate=false
+        kubectl apply -f k8s/ingress.yaml --validate=false
