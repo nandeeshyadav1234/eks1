@@ -24,6 +24,7 @@ jobs:
 
     - name: Verify EKS access
       run: kubectl get nodes
+      
 
     - name: Deploy App to EKS
       run: |
