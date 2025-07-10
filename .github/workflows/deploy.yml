@@ -20,7 +20,7 @@ jobs:
         aws-region: us-east-1
 
     - name: Update kubeconfig
-      run: aws eks update-kubeconfig --region us-east-1 --name eks-cluster2
+      run: aws eks update-kubeconfig --region us-east-1 --name eks-intel-io-test-cluster
 
     - name: Verify EKS access
       run: kubectl get nodes
