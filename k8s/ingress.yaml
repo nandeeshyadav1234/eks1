@@ -5,31 +5,51 @@ metadata:
   namespace: default
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=60
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/group.name: app-ingress-group
 
-    # App1 rule: rewrite /app1/* → /
-    alb.ingress.kubernetes.io/actions.app1: >
-      {"Type":"forward","ForwardConfig":{"TargetGroups":[{"ServiceName":"app1-service","ServicePort":80}]}}
+    # Rewrite path: /app1 → /
+    alb.ingress.kubernetes.io/actions.app1: |
+      {
+        "Type": "forward",
+        "ForwardConfig": {
+          "TargetGroups": [
+            {
+              "ServiceName": "app1-service",
+              "ServicePort": 80
+            }
+          ]
+        }
+      }
 
-    # App2 rule: rewrite /app2/* → /
-    alb.ingress.kubernetes.io/actions.app2: >
-      {"Type":"forward","ForwardConfig":{"TargetGroups":[{"ServiceName":"app2-service","ServicePort":80}]}}
+    # Rewrite path: /app2 → /
+    alb.ingress.kubernetes.io/actions.app2: |
+      {
+        "Type": "forward",
+        "ForwardConfig": {
+          "TargetGroups": [
+            {
+              "ServiceName": "app2-service",
+              "ServicePort": 80
+            }
+          ]
+        }
+      }
 spec:
   ingressClassName: alb
   rules:
     - http:
         paths:
-          - path: /app1/*
+          - path: /app1
             pathType: Prefix
             backend:
               service:
                 name: app1
                 port:
                   name: use-annotation
-          - path: /app2/*
+          - path: /app2
             pathType: Prefix
             backend:
               service:
