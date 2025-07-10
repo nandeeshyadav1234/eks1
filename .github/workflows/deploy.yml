@@ -8,7 +8,9 @@ on:
 env:
   AWS_REGION: us-east-1
   CLUSTER_NAME: intel-io-test-cluster
-  
+  ECR_REGISTRY: 341354505137.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REPO_APP1: 341354505137.dkr.ecr.us-east-1.amazonaws.com/app1
+  ECR_REPO_APP2: 341354505137.dkr.ecr.us-east-1.amazonaws.com/app2
 
 jobs:
   deploy:
@@ -25,13 +27,27 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: Update kubeconfig
+    - name: Login to Amazon ECR
       run: |
-        aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+    - name: Build & Push App1
+      working-directory: app1
+      run: |
+        docker build -t $ECR_REPO_APP1:latest .
+        docker push $ECR_REPO_APP1:latest
+
+    - name: Build & Push App2
+      working-directory: app2
+      run: |
+        docker build -t $ECR_REPO_APP2:latest .
+        docker push $ECR_REPO_APP2:latest
+
+    - name: Update kubeconfig
+      run: aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
 
     - name: Test cluster access
-      run: |
-        kubectl get nodes
+      run: kubectl get nodes
 
     - name: Deploy Kubernetes manifests
       run: |
